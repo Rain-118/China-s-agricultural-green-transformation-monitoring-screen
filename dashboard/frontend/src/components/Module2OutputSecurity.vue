@@ -23,6 +23,7 @@ const props = defineProps<{
 
 const dualAxisChart = ref<HTMLDivElement>()
 let dualChart: echarts.ECharts | null = null
+let resizeObserver: ResizeObserver | null = null
 
 const natFertRate = computed(() => {
   const d = props.nationalFert; if (d.length < 2) return null
@@ -111,13 +112,17 @@ onMounted(() => {
     dualChart = echarts.init(dualAxisChart.value)
     dualChart.setOption(buildDualAxisOption())
   }
+  resizeObserver = new ResizeObserver(() => {
+    dualChart?.resize()
+  })
+  if (dualAxisChart.value) resizeObserver.observe(dualAxisChart.value)
 })
-onUnmounted(() => { dualChart?.dispose() })
+onUnmounted(() => { resizeObserver?.disconnect(); dualChart?.dispose() })
 </script>
 
 <style scoped>
 .module { display: flex; flex-direction: column; height: 100%; }
-.module-title { font-family: 'Noto Serif SC', 'STSong', serif; font-size: 14px; font-weight: 600; color: #4A3528; padding-bottom: 6px; border-bottom: 1px solid rgba(30, 201, 107, 0.2); flex-shrink: 0; }
+.module-title { font-family: 'Noto Serif SC', 'STSong', serif; font-size: 16px; font-weight: 600; color: #000; padding-bottom: 6px; border-bottom: 1px solid rgba(30, 201, 107, 0.2); flex-shrink: 0; }
 .chart-full { flex: 1; min-height: 0; }
 .insight { display: flex; align-items: center; gap: 10px; padding-top: 4px; font-size: 12px; font-family: 'Noto Serif SC', 'Microsoft YaHei', serif; font-weight: 600; color: #4A3528; border-top: 1px solid rgba(30, 201, 107, 0.15); flex-shrink: 0; }
 .insight-text { margin-left: auto; color: #4A3528; font-style: italic; font-weight: 600; }

@@ -3,7 +3,7 @@
     <h3 class="module-title">经济响应度</h3>
     <div class="chart-full" ref="chartRef"></div>
     <div class="insight" v-if="chartData.length">
-      <span>亩均施肥量<span style="color:#F0473C">↓{{ fertTrend }}</span></span>
+      <span>亩均施肥量<span style="color:#2B9EED">↓{{ fertTrend }}</span></span>
       <span>亩均产值<span style="color:#1EC96B">↑{{ incomeTrend }}</span></span>
       <span class="insight-text">{{ insightText }}</span>
     </div>
@@ -17,6 +17,7 @@ import { fetchNationalEconomy } from '../api'
 
 const chartRef = ref<HTMLDivElement>()
 let chart: echarts.ECharts | null = null
+let resizeObserver: ResizeObserver | null = null
 
 const chartData = ref<{ year: number; fertPerMu: number | null; incomePerMu: number | null }[]>([])
 
@@ -64,11 +65,11 @@ function buildOption() {
     grid: { top: 43, right: 40, bottom: 20, left: 48 },
     xAxis: { type: 'category', data: years, boundaryGap: true, axisLabel: { color: '#4A3528', fontSize: 10 }, axisLine: { lineStyle: { color: '#1EC96B' } }, axisTick: { show: false } },
     yAxis: [
-      { type: 'value', name: 'kg/亩', nameTextStyle: { color: '#F0473C', fontSize: 10 }, axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace' }, splitLine: { lineStyle: { color: 'rgba(30,201,107,0.06)' } } },
+      { type: 'value', name: 'kg/亩', nameTextStyle: { color: '#2B9EED', fontSize: 10 }, axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace' }, splitLine: { lineStyle: { color: 'rgba(30,201,107,0.06)' } } },
       { type: 'value', name: '元/亩', nameTextStyle: { color: '#1EC96B', fontSize: 10 }, axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace' }, splitLine: { show: false } }
     ],
     series: [
-      { name: '亩均施肥量 (kg/亩)', type: 'bar', yAxisIndex: 0, data: fertData, itemStyle: { color: '#F0473C', borderRadius: [1, 1, 0, 0] }, barMaxWidth: 10, emphasis: { focus: 'series' } },
+      { name: '亩均施肥量 (kg/亩)', type: 'bar', yAxisIndex: 0, data: fertData, itemStyle: { color: '#2B9EED', borderRadius: [1, 1, 0, 0] }, barMaxWidth: 10, emphasis: { focus: 'series' } },
       { name: '亩均产值 (元/亩)', type: 'bar', yAxisIndex: 1, data: incomeData, itemStyle: { color: '#1EC96B', borderRadius: [1, 1, 0, 0] }, barMaxWidth: 10, emphasis: { focus: 'series' } },
     ]
   }
@@ -77,9 +78,16 @@ function buildOption() {
 onMounted(async () => {
   const rows = await fetchNationalEconomy()
   chartData.value = rows.filter(r => r.fertPerMu !== null && r.incomePerMu !== null)
-  if (chartRef.value) { chart = echarts.init(chartRef.value); chart.setOption(buildOption()) }
+  if (chartRef.value) {
+    chart = echarts.init(chartRef.value)
+    chart.setOption(buildOption())
+  }
+  resizeObserver = new ResizeObserver(() => {
+    chart?.resize()
+  })
+  if (chartRef.value) resizeObserver.observe(chartRef.value)
 })
-onUnmounted(() => { chart?.dispose() })
+onUnmounted(() => { resizeObserver?.disconnect(); chart?.dispose() })
 </script>
 
 <style scoped>

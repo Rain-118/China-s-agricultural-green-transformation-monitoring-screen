@@ -22,6 +22,7 @@ const props = defineProps<{
 
 const chartRef = ref<HTMLDivElement>()
 let chart: echarts.ECharts | null = null
+let resizeObserver: ResizeObserver | null = null
 
 const topMechProvince = computed(() => {
   const sorted = [...props.provinces].filter(p => p.machIncreaseRate !== null).sort((a, b) => (b.machIncreaseRate || 0) - (a.machIncreaseRate || 0))
@@ -71,10 +72,10 @@ function buildOption() {
     },
     legend: {
       data: ['氮肥N', '磷肥P', '钾肥K', '复合肥', '机械总动力'],
-      bottom: 0,
+      top: 0,
       textStyle: { color: '#4A3528', fontSize: 10 },
     },
-    grid: { top: 38, right: 55, bottom: 38, left: 50 },
+    grid: { top: 28, right: 55, bottom: 28, left: 50 },
     xAxis: {
       type: 'category',
       data: years,
@@ -98,7 +99,7 @@ function buildOption() {
           min: fMin,
           max: fMax,
           nameTextStyle: { color: '#4A3528', fontSize: 10 },
-          axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace' },
+          axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace', showMaxLabel: false },
           splitLine: { lineStyle: { color: 'rgba(30,201,107,0.08)' } },
         },
         {
@@ -107,7 +108,7 @@ function buildOption() {
           min: mMin,
           max: mMax,
           nameTextStyle: { color: '#2B9EED', fontSize: 10 },
-          axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace', formatter: (v: number) => (v / 10000).toFixed(1) + '亿' },
+          axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace', formatter: (v: number) => (v / 10000).toFixed(1) + '亿', showMaxLabel: false },
           splitLine: { show: false },
         }
       ]
@@ -133,14 +134,21 @@ function buildOption() {
 }
 
 onMounted(() => {
-  if (chartRef.value) { chart = echarts.init(chartRef.value); chart.setOption(buildOption()) }
+  if (chartRef.value) {
+    chart = echarts.init(chartRef.value)
+    chart.setOption(buildOption())
+  }
+  resizeObserver = new ResizeObserver(() => {
+    chart?.resize()
+  })
+  if (chartRef.value) resizeObserver.observe(chartRef.value)
 })
-onUnmounted(() => { chart?.dispose() })
+onUnmounted(() => { resizeObserver?.disconnect(); chart?.dispose() })
 </script>
 
 <style scoped>
 .module { display: flex; flex-direction: column; height: 100%; }
-.module-title { font-family: 'Noto Serif SC', 'STSong', serif; font-size: 14px; font-weight: 600; color: #4A3528; padding-bottom: 6px; border-bottom: 1px solid rgba(30, 201, 107, 0.2); flex-shrink: 0; }
+.module-title { font-family: 'Noto Serif SC', 'STSong', serif; font-size: 16px; font-weight: 600; color: #000; padding-bottom: 6px; border-bottom: 1px solid rgba(30, 201, 107, 0.2); flex-shrink: 0; }
 .chart-full { flex: 1; min-height: 0; }
 .insight { display: flex; align-items: center; gap: 10px; padding-top: 4px; font-size: 12px; font-family: 'Noto Serif SC', 'Microsoft YaHei', serif; font-weight: 600; color: #4A3528; border-top: 1px solid rgba(30, 201, 107, 0.15); flex-shrink: 0; }
 .insight-text { margin-left: auto; color: #4A3528; font-style: italic; font-weight: 600; }

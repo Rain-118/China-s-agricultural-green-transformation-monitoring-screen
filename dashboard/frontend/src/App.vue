@@ -3,6 +3,56 @@
       <!-- Background decoration -->
       <div class="bg-layer"></div>
 
+      <!-- Module 1: Full-screen map background + Module 6 bottom bar -->
+      <div class="map-bg-layer" v-if="data">
+        <Module1InputReduction
+          :provinces="data.provinces"
+          :levelCounts="data.levelCounts"
+          :selectedYear="selectedYear"
+          :activeLevels="activeLevels"
+          @update:activeLevels="activeLevels = $event"
+        />
+        <!-- Module 6 embedded at bottom -->
+        <div class="map-bottom-bar">
+          <Module6Recommendation
+            :provinces="data.provinces"
+            :selectedYear="selectedYear"
+            :activeLevels="activeLevels"
+          />
+        </div>
+        <!-- Shared legend below Module 6 -->
+        <div class="map-legend-bar">
+          <span
+            class="legend-tag"
+            :class="{ active: activeLevels.has('high'), inactive: !activeLevels.has('high') }"
+            @click="onToggleLevel('high')"
+          >
+            <span class="legend-dot" style="background:#1EC96B"></span>高度响应
+          </span>
+          <span
+            class="legend-tag"
+            :class="{ active: activeLevels.has('normal'), inactive: !activeLevels.has('normal') }"
+            @click="onToggleLevel('normal')"
+          >
+            <span class="legend-dot" style="background:#2B9EED"></span>正常
+          </span>
+          <span
+            class="legend-tag"
+            :class="{ active: activeLevels.has('weak'), inactive: !activeLevels.has('weak') }"
+            @click="onToggleLevel('weak')"
+          >
+            <span class="legend-dot" style="background:#F5B642"></span>弱响应
+          </span>
+          <span
+            class="legend-tag"
+            :class="{ active: activeLevels.has('none'), inactive: !activeLevels.has('none') }"
+            @click="onToggleLevel('none')"
+          >
+            <span class="legend-dot" style="background:#F0473C"></span>未响应
+          </span>
+        </div>
+      </div>
+
       <!-- Header -->
       <header class="header">
         <div class="header-left">
@@ -19,6 +69,8 @@
 
       <!-- Policy Timeline -->
       <PolicyTimeline @update:year="onYearChange" />
+
+
 
       <!-- Dashboard Grid -->
     <div class="grid-container" v-if="data">
@@ -37,28 +89,6 @@
           <span class="grip-icon">⛶</span>
         </div>
         <Module4Economy />
-      </div>
-
-      <!-- Center Column: 模块1 地图 + 模块6 建议 -->
-      <div class="card module-1 map-card">
-        <div class="card-grip" @click="focusedModule = 'module1'" title="点击放大">
-          <span class="grip-icon">⛶</span>
-        </div>
-        <Module1InputReduction
-          :provinces="data.provinces"
-          :levelCounts="data.levelCounts"
-          :selectedYear="selectedYear"
-        />
-      </div>
-      <div class="card module-6 module-6-compact">
-        <div class="card-grip" @click="focusedModule = 'module6'" title="点击放大">
-          <span class="grip-icon">⛶</span>
-        </div>
-        <Module6Recommendation
-          :responseDashboard="data.responseDashboard"
-          :suggestions="data.suggestions"
-          :levelCounts="data.levelCounts"
-        />
       </div>
 
       <!-- Right Column: 模块2、模块3 -->
@@ -107,6 +137,8 @@
               :provinces="data.provinces"
               :levelCounts="data.levelCounts"
               :selectedYear="selectedYear"
+              :activeLevels="activeLevels"
+              @update:activeLevels="activeLevels = $event"
             />
             <Module2OutputSecurity
               v-if="focusedModule === 'module2'"
@@ -127,9 +159,9 @@
             />
             <Module6Recommendation
               v-if="focusedModule === 'module6'"
-              :responseDashboard="data.responseDashboard"
-              :suggestions="data.suggestions"
-              :levelCounts="data.levelCounts"
+              :provinces="data.provinces"
+              :selectedYear="selectedYear"
+              :activeLevels="activeLevels"
             />
           </div>
         </div>
@@ -160,6 +192,19 @@ import Module6Recommendation from './components/Module6Recommendation.vue'
 
 const data = ref<DashboardData | null>(null)
 const selectedYear = ref(2024)
+
+/* ---- Shared legend state (Module 1 + Module 6) ---- */
+const activeLevels = ref<Set<string>>(new Set(['high', 'normal', 'weak', 'none']))
+
+function onToggleLevel(level: string) {
+  if (activeLevels.value.has(level)) {
+    if (activeLevels.value.size <= 1) return
+    activeLevels.value.delete(level)
+  } else {
+    activeLevels.value.add(level)
+  }
+  activeLevels.value = new Set(activeLevels.value)
+}
 
 /* ---- Modal focus state ---- */
 const focusedModule = ref<string | null>(null)
@@ -254,10 +299,15 @@ body {
     radial-gradient(ellipse at 85% 85%, rgba(240, 128, 64, 0.05) 0%, transparent 45%),
     radial-gradient(ellipse at 50% 45%, rgba(245, 182, 66, 0.06) 0%, transparent 55%),
     radial-gradient(ellipse at 55% 50%, rgba(43, 158, 237, 0.04) 0%, transparent 40%),
-    /* 低饱和渐变底 */
-    linear-gradient(180deg, #FFFBF5 0%, #FDF7ED 25%, #FFFBF5 50%, #FBF4E8 75%, #FFFBF5 100%),
+    /* 半透明渐变底 — 露出底层图片 */
+    linear-gradient(180deg, rgba(255,251,245,0.45) 0%, rgba(253,247,237,0.45) 25%, rgba(255,251,245,0.45) 50%, rgba(251,244,232,0.45) 75%, rgba(255,251,245,0.45) 100%),
     /* 田园纹理条纹 */
-    repeating-linear-gradient(0deg, transparent, transparent 118px, rgba(139, 196, 161, 0.04) 118px, rgba(139, 196, 161, 0.04) 120px);
+    repeating-linear-gradient(0deg, transparent, transparent 118px, rgba(139, 196, 161, 0.04) 118px, rgba(139, 196, 161, 0.04) 120px),
+    /* 用户自定义背景图片 — 最底层 */
+    url('/bg-image.jpg');
+  background-size: auto, auto, auto, auto, auto, auto, cover;
+  background-position: center;
+  background-repeat: no-repeat;
   pointer-events: none;
   z-index: 0;
 }
@@ -285,32 +335,208 @@ body {
   font-size: 13px; color: var(--text-secondary); letter-spacing: 2px; margin-top: 2px;
 }
 
-/* Grid — 左右撑满，中间地图固定宽度 */
+/* Grid — 左右模块悬浮在地图上方 */
 .grid-container {
-  position: relative; z-index: 1;
+  position: relative; z-index: 2;
   display: grid;
-  grid-template-columns: 1fr minmax(32vw, 780px) 1fr;
+  grid-template-columns: 30% 1fr 30%;
   grid-template-rows: repeat(8, 1fr);
   gap: 10px;
   padding: 8px 14px 4px;
   flex: 1;
   min-height: 0;
+  pointer-events: none;
 }
+.grid-container .card { pointer-events: auto; }
 
 /* Left column: 2 modules — 50:50 */
 .grid-container .module-5 { grid-column: 1; grid-row: 1 / 5; }
 .grid-container .module-4 { grid-column: 1; grid-row: 5 / 9; }
 
-/* Center: map (6 rows) + recommendations (2 rows) */
-.grid-container .module-1 { grid-column: 2; grid-row: 1 / 7; }
-.grid-container .module-6 { grid-column: 2; grid-row: 7 / 9; }
-
 /* Right column: 2 modules — 50:50 */
 .grid-container .module-2 { grid-column: 3; grid-row: 1 / 5; }
 .grid-container .module-3 { grid-column: 3; grid-row: 5 / 9; }
 
-.card { background: transparent; border: 1px solid var(--border-card); border-radius: 8px; box-shadow: none; padding: 10px 12px; overflow: hidden; display: flex; flex-direction: column; transition: border-color 0.3s; position: relative; }
-.card:hover { border-color: rgba(30, 201, 107, 0.35); }
+/* ========== Full-screen Map Background Layer ========== */
+.map-title-row {
+  position: relative; z-index: 2;
+  text-align: center; padding: 2px 0 0;
+  flex-shrink: 0;
+}
+.map-title-row .module-title {
+  font-family: 'Noto Serif SC', 'STSong', serif;
+  font-size: 14px; font-weight: 600; color: #4A3528;
+  display: inline-block;
+  background: rgba(255, 251, 245, 0.75);
+  backdrop-filter: blur(4px);
+  border-radius: 6px;
+  padding: 2px 14px;
+}
+.map-bg-layer {
+  position: absolute;
+  top: 78px;       /* below header */
+  bottom: 30px;    /* above footer */
+  left: 0; right: 0;
+  z-index: 1;
+  pointer-events: auto;
+  overflow: hidden;
+}
+/* Module 1 inside the bg layer: fully transparent, no card chrome */
+.map-bg-layer > .module {
+  width: 100%; height: 100%;
+  background: transparent;
+}
+.map-bg-layer .module-title {
+  position: absolute;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background: rgba(255, 251, 245, 0.18);
+  backdrop-filter: blur(2px);
+  border-radius: 20px;
+  padding: 5px 18px;
+  white-space: nowrap;
+}
+.map-bg-layer .module-title:hover {
+  background: rgba(255, 251, 245, 0.45);
+}
+.map-bg-layer .insight {
+  background: rgba(255, 251, 245, 0.18);
+  backdrop-filter: blur(2px);
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+.map-bg-layer .insight:hover {
+  background: rgba(255, 251, 245, 0.45);
+}
+
+/* Module 6 embedded bottom bar */
+.map-bottom-bar {
+  position: absolute;
+  bottom: 40px;
+  left: 50%; transform: translateX(-50%);
+  width: 40%;
+  z-index: 5;
+  pointer-events: auto;
+}
+.map-bottom-bar .module {
+  background: transparent;
+  border-radius: 8px; padding: 4px 8px;
+  display: flex; flex-direction: column;
+}
+.map-bottom-bar .dashboard-grid {
+  display: grid; grid-template-columns: repeat(16, 1fr); gap: 2px;
+  padding: 3px 0;
+}
+.map-bottom-bar .province-block {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 2px 1px; border-radius: 3px; cursor: pointer; transition: transform 0.2s;
+  border: 1px solid transparent;
+}
+.map-bottom-bar .province-block:hover { transform: scale(1.05); z-index: 1; }
+.map-bottom-bar .prov-name {
+  font-size: 10px; color: #000; font-weight: 700; line-height: 1.3;
+}
+.map-bottom-bar .prov-value {
+  font-family: 'DIN Pro', 'Consolas', monospace;
+  font-size: 11px; font-weight: 700; color: #000; line-height: 1.3;
+}
+.map-bottom-bar .level-high { background: rgba(30,230,80,0.50); border-color: rgba(30,230,80,0.6); }
+.map-bottom-bar .level-normal { background: rgba(43,168,255,0.50); border-color: rgba(43,168,255,0.55); }
+.map-bottom-bar .level-weak { background: rgba(255,190,50,0.50); border-color: rgba(255,190,50,0.55); }
+.map-bottom-bar .level-none { background: rgba(255,60,40,0.50); border-color: rgba(255,60,40,0.55); }
+.map-bottom-bar .legend-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 2px 0; font-size: 10px;
+  font-family: 'Noto Serif SC', 'Microsoft YaHei', serif;
+  font-weight: 600; color: #000;
+  border-bottom: 1px solid rgba(30, 201, 107, 0.12);
+}
+.map-bottom-bar .legend-item { display: flex; align-items: center; gap: 3px; color: #000; }
+.map-bottom-bar .dot { width: 7px; height: 7px; border-radius: 2px; opacity: 1; }
+.map-bottom-bar .dot.green { background: #1EE650; } .map-bottom-bar .dot.blue { background: #2BA8FF; }
+.map-bottom-bar .dot.orange { background: #FFBE32; } .map-bottom-bar .dot.red { background: #FF3C28; }
+.map-bottom-bar .summary { margin-left: auto; color: #000; }
+
+/* Shared legend bar — centered below Module 6 */
+.map-legend-bar {
+  position: absolute;
+  bottom: 6px;
+  left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 10px;
+  z-index: 6;
+  pointer-events: auto;
+}
+.map-legend-bar .legend-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 12px; font-weight: 600;
+  font-family: 'Noto Serif SC', 'Microsoft YaHei', serif;
+  color: rgba(255,255,255,0.85);
+  background: rgba(10, 25, 45, 0.35);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(130, 200, 255, 0.15);
+  transition: all 0.25s;
+  user-select: none;
+  white-space: nowrap;
+}
+.map-legend-bar .legend-tag.active {
+  border-color: rgba(130, 200, 255, 0.35);
+  box-shadow: 0 0 8px rgba(100, 180, 240, 0.2);
+}
+.map-legend-bar .legend-tag.active:hover {
+  border-color: rgba(160, 220, 255, 0.55);
+  background: rgba(20, 40, 60, 0.5);
+  box-shadow: 0 0 14px rgba(120, 200, 255, 0.3);
+}
+.map-legend-bar .legend-tag.inactive {
+  opacity: 0.35;
+  border-color: rgba(100, 100, 110, 0.2);
+  background: rgba(10, 15, 20, 0.25);
+}
+.map-legend-bar .legend-tag.inactive:hover {
+  opacity: 0.55;
+}
+.map-legend-bar .legend-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  box-shadow: 0 0 5px currentColor;
+}
+
+.card {
+  background: rgba(255, 251, 245, 0.5);
+  border: 1px solid rgba(80, 180, 240, 0.5);
+  border-radius: 8px;
+  box-shadow:
+    0 0 8px rgba(80, 180, 240, 0.2),
+    0 0 20px rgba(80, 180, 240, 0.08),
+    inset 0 0 12px rgba(80, 180, 240, 0.06);
+  padding: 10px 12px; overflow: hidden;
+  display: flex; flex-direction: column;
+  transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+  position: relative; backdrop-filter: blur(2px);
+  animation: card-glow-pulse 3s ease-in-out infinite;
+}
+.card:hover {
+  border-color: rgba(120, 210, 255, 0.8);
+  background: rgba(255, 251, 245, 0.65);
+  box-shadow:
+    0 0 16px rgba(100, 200, 255, 0.35),
+    0 0 36px rgba(80, 180, 240, 0.15),
+    inset 0 0 20px rgba(100, 200, 255, 0.1);
+}
+@keyframes card-glow-pulse {
+  0%, 100% {
+    border-color: rgba(80, 180, 240, 0.5);
+    box-shadow: 0 0 8px rgba(80, 180, 240, 0.2), 0 0 20px rgba(80, 180, 240, 0.08), inset 0 0 12px rgba(80, 180, 240, 0.06);
+  }
+  50% {
+    border-color: rgba(110, 210, 255, 0.7);
+    box-shadow: 0 0 14px rgba(100, 200, 255, 0.3), 0 0 30px rgba(90, 190, 250, 0.14), inset 0 0 18px rgba(100, 200, 255, 0.12);
+  }
+}
 
 /* Grip bar at card top — click to expand */
 .card-grip {
@@ -334,16 +560,6 @@ body {
 .card-grip:hover .grip-icon {
   transform: scale(1.2);
   color: #1EC96B;
-}
-
-/* Center map card — 最高饱和视觉焦点 */
-.map-card {
-  border-color: rgba(30, 201, 107, 0.5) !important;
-  border-width: 2px !important;
-  box-shadow:
-    0 0 30px rgba(30, 201, 107, 0.15),
-    0 0 60px rgba(43, 158, 237, 0.08),
-    inset 0 0 40px rgba(30, 201, 107, 0.03) !important;
 }
 
 /* Loading */

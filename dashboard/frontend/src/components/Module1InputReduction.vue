@@ -1,16 +1,6 @@
 <template>
   <div class="module">
-    <h3 class="module-title">
-      中国各省份化肥减量响应度
-      <span class="year-badge" :class="{ animating: isAnimating }">
-        <span class="year-icon">{{ isAnimating ? '💥' : '📊' }}</span>
-        {{ currentYear }}年
-        <span class="year-label">{{ currentYear < 2016 ? '无数据' : currentYear < 2021 ? '启动期' : '加速期' }}</span>
-      </span>
-      <button class="replay-btn" :class="{ spinning: isAnimating }" @click="triggerShockwave" title="重新播放冲击波">
-        ▶
-      </button>
-    </h3>
+    <h3 class="module-title">中国各省份化肥减量响应度</h3>
     <div class="chart-wrap" ref="mapContainer">
       <canvas
         ref="shockwaveCanvas"
@@ -18,37 +8,6 @@
         :width="canvasWidth"
         :height="canvasHeight"
       ></canvas>
-    </div>
-    <div class="insight">
-      <span
-        class="legend-tag"
-        :class="{ active: activeLevels.has('high'), inactive: !activeLevels.has('high') }"
-        @click="toggleLevel('high')"
-      >
-        <span class="insight-dot green"></span>高度响应 <b>{{ counts.high }}</b>省
-      </span>
-      <span
-        class="legend-tag"
-        :class="{ active: activeLevels.has('normal'), inactive: !activeLevels.has('normal') }"
-        @click="toggleLevel('normal')"
-      >
-        <span class="insight-dot blue"></span>正常 <b>{{ counts.normal }}</b>省
-      </span>
-      <span
-        class="legend-tag"
-        :class="{ active: activeLevels.has('weak'), inactive: !activeLevels.has('weak') }"
-        @click="toggleLevel('weak')"
-      >
-        <span class="insight-dot orange"></span>弱响应 <b>{{ counts.weak }}</b>省
-      </span>
-      <span
-        class="legend-tag"
-        :class="{ active: activeLevels.has('none'), inactive: !activeLevels.has('none') }"
-        @click="toggleLevel('none')"
-      >
-        <span class="insight-dot red"></span>未响应 <b>{{ counts.none }}</b>省
-      </span>
-      <span class="insight-text">{{ insightText }}</span>
     </div>
   </div>
 </template>
@@ -62,6 +21,11 @@ const props = defineProps<{
   provinces: ProvinceData[]
   levelCounts: Record<string, number>
   selectedYear: number
+  activeLevels: Set<string>
+}>()
+
+const emit = defineEmits<{
+  'update:activeLevels': [value: Set<string>]
 }>()
 
 const mapContainer = ref<HTMLDivElement>()
@@ -76,21 +40,18 @@ const BASELINE_YEAR = 2016
 const isAnimating = ref(false)
 let animFrameId = 0
 
-/* ---- Legend interaction state ---- */
-const activeLevels = ref<Set<string>>(new Set(['high', 'normal', 'weak', 'none']))
-
+/* ---- Legend interaction state (synced with parent) ---- */
 function toggleLevel(level: string) {
-  if (activeLevels.value.has(level)) {
-    // Don't allow deselecting all levels
-    if (activeLevels.value.size <= 1) return
-    activeLevels.value.delete(level)
+  const next = new Set(props.activeLevels)
+  if (next.has(level)) {
+    if (next.size <= 1) return
+    next.delete(level)
   } else {
-    activeLevels.value.add(level)
+    next.add(level)
   }
-  // Trigger reactivity by replacing the Set
-  activeLevels.value = new Set(activeLevels.value)
+  emit('update:activeLevels', next)
   // Apply filter to map immediately
-  applyLegendFilterToMap()
+  nextTick(() => applyLegendFilterToMap())
 }
 
 /** Apply current legend filter to map data without animation */
@@ -98,7 +59,7 @@ function applyLegendFilterToMap() {
   if (!chart) return
   const data = yearlyData.value
   const mapData = data.map(p => {
-    const isActive = activeLevels.value.has(p.responseLevel)
+    const isActive = props.activeLevels.has(p.responseLevel)
     if (isActive) {
       const color = levelColors[p.responseLevel] || levelColors.unknown
       return {
@@ -288,12 +249,12 @@ function buildMapOption(geoJson: any) {
     series: [{
       type: 'map', map: 'china', roam: true, zoom: 1.4,
       scaleLimit: { min: 0.8, max: 8 },
-      top: '20%', left: 'center', width: 'auto', height: 'auto',
+      top: '27%', left: 'center', width: 'auto', height: 'auto',
       label: { show: false },
       itemStyle: {
         borderColor: 'rgba(74,53,40,0.35)',
         borderWidth: 1.2,
-        areaColor: '#F0EBE3',
+        areaColor: 'transparent',
         shadowBlur: 0,
         shadowColor: 'transparent',
       },
@@ -309,9 +270,9 @@ function buildMapOption(geoJson: any) {
       select: { disabled: true },
       data: yearlyData.value.map(p => ({
         name: p.geoName,
-        value: 0,
-        level: 'unknown',
-        itemStyle: { areaColor: '#F0EBE3' },
+        value: p.responseDegree,
+        level: p.responseLevel,
+        itemStyle: { areaColor: levelColors[p.responseLevel] || 'transparent' },
       })),
       nameMap: {},
       animationDurationUpdate: 400,
@@ -349,13 +310,13 @@ function triggerShockwave() {
     chart.setOption({
       series: [{
         data: yearlyData.value.map(p => {
-          const levelActive = activeLevels.value.has(p.responseLevel)
+          const levelActive = props.activeLevels.has(p.responseLevel)
           return {
             name: p.geoName,
             value: 0,
             level: levelActive ? 'unknown' : p.responseLevel,
             itemStyle: levelActive
-              ? { areaColor: '#F0EBE3' }
+              ? { areaColor: 'transparent' }
               : { areaColor: '#E8E3DA', borderColor: 'rgba(180,175,165,0.3)', borderWidth: 0.5, opacity: 0.35 },
           }
         })
@@ -520,7 +481,7 @@ function triggerShockwave() {
       if (isReached) {
         reachedSoFar++
         // Check if this level is hidden by legend
-        const levelActive = activeLevels.value.has(prov.responseLevel)
+        const levelActive = props.activeLevels.has(prov.responseLevel)
         if (!levelActive) {
           // Hidden by legend: render as grayed out
           mapUpdates.push({
@@ -575,13 +536,13 @@ function triggerShockwave() {
           delete lastRevealTime[prov.geoName]
         }
         // Respect legend filter even for unreached provinces
-        const levelActive = activeLevels.value.has(prov.responseLevel)
+        const levelActive = props.activeLevels.has(prov.responseLevel)
         mapUpdates.push({
           name: prov.geoName,
           value: 0,
           level: levelActive ? 'unknown' : prov.responseLevel,
           itemStyle: levelActive
-            ? { areaColor: '#F0EBE3', borderColor: 'rgba(74,53,40,0.2)', borderWidth: 1 }
+            ? { areaColor: 'transparent', borderColor: 'rgba(74,53,40,0.2)', borderWidth: 1 }
             : { areaColor: '#E8E3DA', borderColor: 'rgba(180,175,165,0.3)', borderWidth: 0.5, opacity: 0.35 },
         })
       }

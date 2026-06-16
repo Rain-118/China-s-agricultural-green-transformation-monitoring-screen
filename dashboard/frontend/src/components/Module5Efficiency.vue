@@ -34,6 +34,7 @@ const props = defineProps<{
 
 const radarContainer = ref<HTMLDivElement>()
 let chart: echarts.ECharts | null = null
+let resizeObserver: ResizeObserver | null = null
 
 /* ======== Region groups ======== */
 const REGIONS: Record<string, string[]> = {
@@ -220,16 +221,21 @@ onMounted(() => {
   chart.on('legendselectchanged', (params: any) => {
     selectedMap.value = { ...selectedMap.value, ...params.selected }
   })
+
+  resizeObserver = new ResizeObserver(() => {
+    chart?.resize()
+  })
+  resizeObserver.observe(radarContainer.value)
 })
 
-onUnmounted(() => { chart?.dispose() })
+onUnmounted(() => { resizeObserver?.disconnect(); chart?.dispose() })
 </script>
 
 <style scoped>
 .module { display: flex; flex-direction: column; height: 100%; }
 .module-title {
   font-family: 'Noto Serif SC', 'STSong', serif;
-  font-size: 14px; font-weight: 600; color: #4A3528;
+  font-size: 16px; font-weight: 600; color: #000;
   padding-bottom: 6px;
   border-bottom: 1px solid rgba(139, 196, 161, 0.2);
   flex-shrink: 0;
