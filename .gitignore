@@ -1,0 +1,8 @@
+node_modules/
+.vite/
+dist/
+.claude/
+.idea/
+*.log
+.DS_Store
+Thumbs.db
