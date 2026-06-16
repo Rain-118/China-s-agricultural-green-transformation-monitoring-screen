@@ -66,14 +66,16 @@ function buildDualAxisOption() {
         {
           type: 'value', name: '化肥 (万吨)', min: fMin - fPad, max: fMax + fPad,
           nameTextStyle: { color: '#F0473C', fontSize: 10 },
-          axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace' },
+          axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace', formatter: (v: number) => Math.round(v) + '' },
           splitLine: { lineStyle: { color: 'rgba(30,201,107,0.08)' } },
+          splitNumber: 5,
         },
         {
           type: 'value', name: '粮食 (万吨)', min: gMin - gPad, max: gMax + gPad,
           nameTextStyle: { color: '#1EC96B', fontSize: 10 },
-          axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace', formatter: (v: number) => (v / 10000).toFixed(2) + '亿' },
+          axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace', formatter: (v: number) => (v / 10000).toFixed(1) + '亿' },
           splitLine: { show: false },
+          splitNumber: 4,
         }
       ]
     })(),
