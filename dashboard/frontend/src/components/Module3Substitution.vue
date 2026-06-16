@@ -80,7 +80,7 @@ function buildOption() {
       type: 'category',
       data: years,
       boundaryGap: false,
-      axisLabel: { color: '#4A3528', fontSize: 10 },
+      axisLabel: { color: '#4A3528', fontSize: 12 },
       axisLine: { lineStyle: { color: '#1EC96B' } },
     },
     yAxis: (() => {
@@ -98,17 +98,17 @@ function buildOption() {
           name: '万吨 (肥料)',
           min: fMin,
           max: fMax,
-          nameTextStyle: { color: '#4A3528', fontSize: 10 },
-          axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace', showMaxLabel: false },
+          nameTextStyle: { color: '#4A3528', fontSize: 12 },
+          axisLabel: { color: '#4A3528', fontSize: 12, fontFamily: 'DIN Pro, Consolas, monospace', showMaxLabel: false },
           splitLine: { lineStyle: { color: 'rgba(30,201,107,0.08)' } },
         },
         {
           type: 'value',
-          name: '万千瓦 (机械)',
+          name: '亿千瓦 (机械)',
           min: mMin,
           max: mMax,
-          nameTextStyle: { color: '#2B9EED', fontSize: 10 },
-          axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace', formatter: (v: number) => (v / 10000).toFixed(1) + '亿', showMaxLabel: false },
+          nameTextStyle: { color: '#2B9EED', fontSize: 12 },
+          axisLabel: { color: '#4A3528', fontSize: 12, fontFamily: 'DIN Pro, Consolas, monospace', formatter: (v: number) => (v / 10000).toFixed(1), showMaxLabel: false },
           splitLine: { show: false },
         }
       ]

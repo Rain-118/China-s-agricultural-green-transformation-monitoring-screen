@@ -48,11 +48,11 @@ function buildDualAxisOption() {
   return {
     backgroundColor: 'transparent',
     tooltip: { trigger: 'axis', backgroundColor: 'rgba(255,255,255,0.92)', borderColor: 'rgba(30,201,107,0.3)', textStyle: { color: '#555555', fontSize: 12 } },
-    legend: { data: ['化肥总量(万吨)', '粮食产量(万吨)'], top: 6, textStyle: { color: '#4A3528', fontSize: 11 } },
+    legend: { data: ['化肥总量(万吨)', '粮食产量(万吨)'], top: 6, textStyle: { color: '#4A3528', fontSize: 13 } },
     grid: { top: 40, right: 60, bottom: 35, left: 55 },
     xAxis: {
       type: 'category', data: props.nationalFert.map(d => d.year + ''),
-      axisLabel: { color: '#4A3528', fontSize: 10, interval: 0, rotate: 0 },
+      axisLabel: { color: '#4A3528', fontSize: 12, interval: 0, rotate: 0 },
       axisLine: { lineStyle: { color: '#1EC96B' } },
       axisTick: { show: false },
     },
@@ -66,15 +66,15 @@ function buildDualAxisOption() {
       return [
         {
           type: 'value', name: '化肥 (万吨)', min: fMin - fPad, max: fMax + fPad,
-          nameTextStyle: { color: '#F0473C', fontSize: 10 },
-          axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace', formatter: (v: number) => Math.round(v) + '' },
+          nameTextStyle: { color: '#F0473C', fontSize: 12 },
+          axisLabel: { color: '#4A3528', fontSize: 12, fontFamily: 'DIN Pro, Consolas, monospace', formatter: (v: number) => Math.round(v) + '' },
           splitLine: { lineStyle: { color: 'rgba(30,201,107,0.08)' } },
           splitNumber: 5,
         },
         {
-          type: 'value', name: '粮食 (万吨)', min: gMin - gPad, max: gMax + gPad,
-          nameTextStyle: { color: '#1EC96B', fontSize: 10 },
-          axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace', formatter: (v: number) => (v / 10000).toFixed(1) + '亿' },
+          type: 'value', name: '粮食 (亿斤)', min: gMin - gPad, max: gMax + gPad,
+          nameTextStyle: { color: '#1EC96B', fontSize: 12 },
+          axisLabel: { color: '#4A3528', fontSize: 12, fontFamily: 'DIN Pro, Consolas, monospace', formatter: (v: number) => (v / 10000).toFixed(1) },
           splitLine: { show: false },
           splitNumber: 4,
         }

@@ -61,12 +61,12 @@ function buildOption() {
         return `<b>${y}</b><br/>亩均施肥量：${f} kg/亩<br/>亩均产值：${i} 元/亩`
       }
     },
-    legend: { data: ['亩均施肥量 (kg/亩)', '亩均产值 (元/亩)'], top: 0, right: 2, textStyle: { color: '#4A3528', fontSize: 10 }, itemWidth: 9, itemHeight: 7 },
-    grid: { top: 43, right: 40, bottom: 20, left: 48 },
-    xAxis: { type: 'category', data: years, boundaryGap: true, axisLabel: { color: '#4A3528', fontSize: 10 }, axisLine: { lineStyle: { color: '#1EC96B' } }, axisTick: { show: false } },
+    legend: { data: ['亩均施肥量 (kg/亩)', '亩均产值 (元/亩)'], top: 0, right: 2, textStyle: { color: '#4A3528', fontSize: 12 }, itemWidth: 9, itemHeight: 7 },
+    grid: { top: 48, right: 45, bottom: 20, left: 48 },
+    xAxis: { type: 'category', data: years, boundaryGap: true, axisLabel: { color: '#4A3528', fontSize: 12 }, axisLine: { lineStyle: { color: '#1EC96B' } }, axisTick: { show: false } },
     yAxis: [
-      { type: 'value', name: 'kg/亩', nameTextStyle: { color: '#2B9EED', fontSize: 10 }, axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace' }, splitLine: { lineStyle: { color: 'rgba(30,201,107,0.06)' } } },
-      { type: 'value', name: '元/亩', nameTextStyle: { color: '#1EC96B', fontSize: 10 }, axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace' }, splitLine: { show: false } }
+      { type: 'value', name: 'kg/亩', nameTextStyle: { color: '#2B9EED', fontSize: 12 }, axisLabel: { color: '#4A3528', fontSize: 12, fontFamily: 'DIN Pro, Consolas, monospace' }, splitLine: { lineStyle: { color: 'rgba(30,201,107,0.06)' } } },
+      { type: 'value', name: '元/亩', nameTextStyle: { color: '#1EC96B', fontSize: 12 }, axisLabel: { color: '#4A3528', fontSize: 12, fontFamily: 'DIN Pro, Consolas, monospace' }, splitLine: { show: false } }
     ],
     series: [
       { name: '亩均施肥量 (kg/亩)', type: 'bar', yAxisIndex: 0, data: fertData, itemStyle: { color: '#2B9EED', borderRadius: [1, 1, 0, 0] }, barMaxWidth: 10, emphasis: { focus: 'series' } },
@@ -92,7 +92,7 @@ onUnmounted(() => { resizeObserver?.disconnect(); chart?.dispose() })
 
 <style scoped>
 .module { display: flex; flex-direction: column; height: 100%; }
-.module-title { font-family: 'Noto Serif SC', 'STSong', serif; font-size: 14px; font-weight: 600; color: #4A3528; padding-bottom: 8px; border-bottom: 1px solid rgba(30, 201, 107, 0.2); flex-shrink: 0; }
+.module-title { font-family: 'Noto Serif SC', 'STSong', serif; font-size: 16px; font-weight: 600; color: #000; padding-bottom: 8px; border-bottom: 1px solid rgba(30, 201, 107, 0.2); flex-shrink: 0; }
 .chart-full { flex: 1; min-height: 0; max-height: 260px; max-width: 100%; }
 .insight { display: flex; align-items: center; gap: 10px; padding-top: 4px; font-size: 12px; font-family: 'Noto Serif SC', 'Microsoft YaHei', serif; font-weight: 600; color: #4A3528; border-top: 1px solid rgba(30, 201, 107, 0.15); flex-shrink: 0; }
 .insight-text { margin-left: auto; color: #4A3528; font-style: italic; font-weight: 600; }
