@@ -1,6 +1,6 @@
 <template>
   <div class="module">
-    <h3 class="module-title">🔧 替代机制响应度</h3>
+    <h3 class="module-title">替代机制响应度</h3>
     <div class="chart-full" ref="chartRef"></div>
     <div class="insight">
       <span>复合肥占比<span style="color:#1EC96B">↑ {{ compoundRatio }}%</span></span>

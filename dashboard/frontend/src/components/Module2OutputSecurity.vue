@@ -1,6 +1,6 @@
 <template>
   <div class="module">
-    <h3 class="module-title">📊 产出保障响应度</h3>
+    <h3 class="module-title">产出保障响应度</h3>
     <div class="chart-full" ref="dualAxisChart"></div>
     <div class="insight">
       <span>化肥<span style="color:#F0473C">↓{{ natFertRate ?? '--' }}%</span></span>

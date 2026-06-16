@@ -1,6 +1,6 @@
 <template>
   <div class="module">
-    <h3 class="module-title">💰 经济响应度</h3>
+    <h3 class="module-title">经济响应度</h3>
     <div class="chart-full" ref="chartRef"></div>
     <div class="insight" v-if="chartData.length">
       <span>亩均施肥量<span style="color:#F0473C">↓{{ fertTrend }}</span></span>

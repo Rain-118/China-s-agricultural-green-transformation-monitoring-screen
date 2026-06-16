@@ -1,6 +1,6 @@
 <template>
   <div class="module">
-    <h3 class="module-title">⚡ 效率响应度（分区域雷达图）</h3>
+    <h3 class="module-title">效率响应度（分区域雷达图）</h3>
     <div class="chart-wrap" ref="radarContainer"></div>
     <!-- Custom legend row with toggle -->
     <div class="legend-row">

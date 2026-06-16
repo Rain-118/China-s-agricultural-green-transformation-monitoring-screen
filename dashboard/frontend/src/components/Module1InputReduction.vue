@@ -1,7 +1,7 @@
 <template>
   <div class="module">
     <h3 class="module-title">
-      🌱 中国各省份化肥减量响应度
+      中国各省份化肥减量响应度
       <span class="year-badge" :class="{ animating: isAnimating }">
         <span class="year-icon">{{ isAnimating ? '💥' : '📊' }}</span>
         {{ currentYear }}年
@@ -20,10 +20,34 @@
       ></canvas>
     </div>
     <div class="insight">
-      <span class="insight-dot green"></span>高度响应 <b>{{ counts.high }}</b>省
-      <span class="insight-dot blue"></span>正常 <b>{{ counts.normal }}</b>省
-      <span class="insight-dot orange"></span>弱响应 <b>{{ counts.weak }}</b>省
-      <span class="insight-dot red"></span>未响应 <b>{{ counts.none }}</b>省
+      <span
+        class="legend-tag"
+        :class="{ active: activeLevels.has('high'), inactive: !activeLevels.has('high') }"
+        @click="toggleLevel('high')"
+      >
+        <span class="insight-dot green"></span>高度响应 <b>{{ counts.high }}</b>省
+      </span>
+      <span
+        class="legend-tag"
+        :class="{ active: activeLevels.has('normal'), inactive: !activeLevels.has('normal') }"
+        @click="toggleLevel('normal')"
+      >
+        <span class="insight-dot blue"></span>正常 <b>{{ counts.normal }}</b>省
+      </span>
+      <span
+        class="legend-tag"
+        :class="{ active: activeLevels.has('weak'), inactive: !activeLevels.has('weak') }"
+        @click="toggleLevel('weak')"
+      >
+        <span class="insight-dot orange"></span>弱响应 <b>{{ counts.weak }}</b>省
+      </span>
+      <span
+        class="legend-tag"
+        :class="{ active: activeLevels.has('none'), inactive: !activeLevels.has('none') }"
+        @click="toggleLevel('none')"
+      >
+        <span class="insight-dot red"></span>未响应 <b>{{ counts.none }}</b>省
+      </span>
       <span class="insight-text">{{ insightText }}</span>
     </div>
   </div>
@@ -51,6 +75,49 @@ const currentYear = ref(props.selectedYear || 2024)
 const BASELINE_YEAR = 2016
 const isAnimating = ref(false)
 let animFrameId = 0
+
+/* ---- Legend interaction state ---- */
+const activeLevels = ref<Set<string>>(new Set(['high', 'normal', 'weak', 'none']))
+
+function toggleLevel(level: string) {
+  if (activeLevels.value.has(level)) {
+    // Don't allow deselecting all levels
+    if (activeLevels.value.size <= 1) return
+    activeLevels.value.delete(level)
+  } else {
+    activeLevels.value.add(level)
+  }
+  // Trigger reactivity by replacing the Set
+  activeLevels.value = new Set(activeLevels.value)
+  // Apply filter to map immediately
+  applyLegendFilterToMap()
+}
+
+/** Apply current legend filter to map data without animation */
+function applyLegendFilterToMap() {
+  if (!chart) return
+  const data = yearlyData.value
+  const mapData = data.map(p => {
+    const isActive = activeLevels.value.has(p.responseLevel)
+    if (isActive) {
+      const color = levelColors[p.responseLevel] || levelColors.unknown
+      return {
+        name: p.geoName,
+        value: p.responseDegree,
+        level: p.responseLevel,
+        itemStyle: { areaColor: color, borderColor: 'rgba(74,53,40,0.35)', borderWidth: 1.2 },
+      }
+    } else {
+      return {
+        name: p.geoName,
+        value: 0,
+        level: p.responseLevel,
+        itemStyle: { areaColor: '#E8E3DA', borderColor: 'rgba(180,175,165,0.3)', borderWidth: 0.5, opacity: 0.35 },
+      }
+    }
+  })
+  chart.setOption({ series: [{ data: mapData }] }, false)
+}
 
 /* ---- Province centroids (lon, lat) ---- */
 const provinceCentroids: Record<string, [number, number]> = {
@@ -81,10 +148,16 @@ const levelColors: Record<string, string> = {
 }
 
 /* ---- Computed yearly data ---- */
-const counts = computed(() => ({
-  high: props.levelCounts.high || 0, normal: props.levelCounts.normal || 0,
-  weak: props.levelCounts.weak || 0, none: props.levelCounts.none || 0,
-}))
+const counts = computed(() => {
+  const result = { high: 0, normal: 0, weak: 0, none: 0 }
+  for (const p of yearlyData.value) {
+    if (p.responseLevel === 'high') result.high++
+    else if (p.responseLevel === 'normal') result.normal++
+    else if (p.responseLevel === 'weak') result.weak++
+    else if (p.responseLevel === 'none') result.none++
+  }
+  return result
+})
 
 // Compute yearly response degrees from existing province data
 interface YearlyProvince {
@@ -213,20 +286,24 @@ function buildMapOption(geoJson: any) {
       calculable: false, show: false,
     },
     series: [{
-      type: 'map', map: 'china', roam: false, zoom: 1.4,
+      type: 'map', map: 'china', roam: true, zoom: 1.4,
+      scaleLimit: { min: 0.8, max: 8 },
       top: '20%', left: 'center', width: 'auto', height: 'auto',
       label: { show: false },
       itemStyle: {
-        borderColor: 'rgba(30,201,107,0.3)',
-        borderWidth: 1,
+        borderColor: 'rgba(74,53,40,0.35)',
+        borderWidth: 1.2,
         areaColor: '#F0EBE3',
+        shadowBlur: 0,
+        shadowColor: 'transparent',
       },
       emphasis: {
-        scale: 1.5,
-        label: { show: true, color: '#4A3528', fontSize: 12, fontWeight: 'bold' },
+        scale: 1.3,
+        label: { show: true, color: '#4A3528', fontSize: 13, fontWeight: 'bold' },
         itemStyle: {
-          borderColor: '#F5B642', borderWidth: 3,
-          shadowBlur: 16, shadowColor: 'rgba(245,182,66,0.4)',
+          borderColor: '#F5B642', borderWidth: 3.5,
+          shadowBlur: 20, shadowColor: 'rgba(245,182,66,0.5)',
+          areaColor: null,
         },
       },
       select: { disabled: true },
@@ -267,16 +344,21 @@ function triggerShockwave() {
   canvasWidth.value = W
   canvasHeight.value = H
 
-  // Reset map to neutral
+  // Reset map to neutral (respecting legend filter)
   if (chart) {
     chart.setOption({
       series: [{
-        data: yearlyData.value.map(p => ({
-          name: p.geoName,
-          value: 0,
-          level: 'unknown',
-          itemStyle: { areaColor: '#F0EBE3' },
-        }))
+        data: yearlyData.value.map(p => {
+          const levelActive = activeLevels.value.has(p.responseLevel)
+          return {
+            name: p.geoName,
+            value: 0,
+            level: levelActive ? 'unknown' : p.responseLevel,
+            itemStyle: levelActive
+              ? { areaColor: '#F0EBE3' }
+              : { areaColor: '#E8E3DA', borderColor: 'rgba(180,175,165,0.3)', borderWidth: 0.5, opacity: 0.35 },
+          }
+        })
       }]
     })
   }
@@ -437,6 +519,18 @@ function triggerShockwave() {
 
       if (isReached) {
         reachedSoFar++
+        // Check if this level is hidden by legend
+        const levelActive = activeLevels.value.has(prov.responseLevel)
+        if (!levelActive) {
+          // Hidden by legend: render as grayed out
+          mapUpdates.push({
+            name: prov.geoName,
+            value: prov.responseDegree,
+            level: prov.responseLevel,
+            itemStyle: { areaColor: '#E8E3DA', borderColor: 'rgba(180,175,165,0.3)', borderWidth: 0.5, opacity: 0.35 },
+          })
+          continue
+        }
         // Just reached: flash + particles
         if (!lastRevealTime[prov.geoName]) {
           lastRevealTime[prov.geoName] = now
@@ -460,7 +554,7 @@ function triggerShockwave() {
           level: prov.responseLevel,
           itemStyle: {
             areaColor: color,
-            borderColor: revealProgress < 0.5 ? '#fff' : 'rgba(30,201,107,0.5)',
+            borderColor: revealProgress < 0.5 ? '#fff' : 'rgba(74,53,40,0.5)',
             borderWidth: revealProgress < 0.5 ? 2.5 : 1,
             shadowBlur: revealProgress < 0.5 ? 15 * (1 - revealProgress * 2) : 0,
             shadowColor: revealProgress < 0.5 ? `rgba(${rgb.r},${rgb.g},${rgb.b},0.5)` : 'transparent',
@@ -480,11 +574,15 @@ function triggerShockwave() {
         if (lastRevealTime[prov.geoName]) {
           delete lastRevealTime[prov.geoName]
         }
+        // Respect legend filter even for unreached provinces
+        const levelActive = activeLevels.value.has(prov.responseLevel)
         mapUpdates.push({
           name: prov.geoName,
           value: 0,
-          level: 'unknown',
-          itemStyle: { areaColor: '#F0EBE3', borderColor: 'rgba(30,201,107,0.15)', borderWidth: 1 },
+          level: levelActive ? 'unknown' : prov.responseLevel,
+          itemStyle: levelActive
+            ? { areaColor: '#F0EBE3', borderColor: 'rgba(74,53,40,0.2)', borderWidth: 1 }
+            : { areaColor: '#E8E3DA', borderColor: 'rgba(180,175,165,0.3)', borderWidth: 0.5, opacity: 0.35 },
         })
       }
     }
@@ -667,7 +765,7 @@ onUnmounted(() => {
 }
 
 .insight {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
   padding: 4px 0; font-size: 12px;
   font-family: 'Noto Serif SC', 'Microsoft YaHei', serif;
   font-weight: 600; color: #4A3528;
@@ -684,6 +782,43 @@ onUnmounted(() => {
   font-style: italic; font-size: 11px;
   font-family: 'Noto Serif SC', 'Microsoft YaHei', serif;
   font-weight: 600;
+}
+
+/* ---- Interactive legend tags ---- */
+.legend-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border: 1px solid transparent;
+  user-select: none;
+  white-space: nowrap;
+}
+.legend-tag.active {
+  border-color: rgba(139, 196, 161, 0.3);
+  background: rgba(139, 196, 161, 0.06);
+}
+.legend-tag.active:hover {
+  border-color: rgba(30, 201, 107, 0.5);
+  background: rgba(30, 201, 107, 0.12);
+  box-shadow: 0 0 8px rgba(30, 201, 107, 0.15);
+}
+.legend-tag.inactive {
+  opacity: 0.45;
+  border-color: rgba(180, 175, 165, 0.3);
+  background: rgba(180, 175, 165, 0.06);
+  text-decoration: line-through;
+  text-decoration-color: rgba(180, 175, 165, 0.4);
+}
+.legend-tag.inactive:hover {
+  opacity: 0.65;
+  border-color: rgba(180, 175, 165, 0.5);
+  background: rgba(180, 175, 165, 0.12);
+}
+.legend-tag.inactive .insight-dot {
+  filter: grayscale(100%);
+  opacity: 0.5;
 }
 
 .shockwave-legend {

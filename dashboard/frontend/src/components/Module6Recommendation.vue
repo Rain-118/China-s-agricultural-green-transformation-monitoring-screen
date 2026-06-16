@@ -1,6 +1,6 @@
 <template>
   <div class="module">
-    <h3 class="module-title">💡 促进建议</h3>
+    <h3 class="module-title">促进建议</h3>
 
     <!-- Response Dashboard Grid -->
     <div class="dashboard-grid">
