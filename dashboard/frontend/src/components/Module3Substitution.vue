@@ -74,7 +74,7 @@ function buildOption() {
       bottom: 0,
       textStyle: { color: '#4A3528', fontSize: 10 },
     },
-    grid: { top: 12, right: 55, bottom: 38, left: 50 },
+    grid: { top: 38, right: 55, bottom: 38, left: 50 },
     xAxis: {
       type: 'category',
       data: years,
