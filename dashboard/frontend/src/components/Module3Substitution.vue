@@ -52,10 +52,10 @@ const machTrend = computed(() => {
   for (const p of props.provinces) {
     for (const [yr, val] of Object.entries(p.machinery)) {
       const y = Number(yr)
-      if (y >= 2021 && y <= 2024) map[y] = (map[y] || 0) + val
+      map[y] = (map[y] || 0) + val
     }
   }
-  return Object.entries(map).sort((a, b) => Number(a[0]) - Number(b[0])).map(([yr, val]) => Math.round(val))
+  return Object.entries(map).sort((a, b) => Number(a[0]) - Number(b[0])).map(([_, val]) => Math.round(val))
 })
 
 function buildOption() {
@@ -82,26 +82,36 @@ function buildOption() {
       axisLabel: { color: '#4A3528', fontSize: 10 },
       axisLine: { lineStyle: { color: '#1EC96B' } },
     },
-    yAxis: [
-      {
-        type: 'value',
-        name: '万吨 (肥料)',
-        max: 7000,
-        min: 0,
-        nameTextStyle: { color: '#4A3528', fontSize: 10 },
-        axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace' },
-        splitLine: { lineStyle: { color: 'rgba(30,201,107,0.08)' } },
-      },
-      {
-        type: 'value',
-        name: '万千瓦 (机械)',
-        min: 95000,
-        max: 120000,
-        nameTextStyle: { color: '#2B9EED', fontSize: 10 },
-        axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace', formatter: (v: number) => (v / 10000).toFixed(1) + '亿' },
-        splitLine: { show: false },
-      }
-    ],
+    yAxis: (() => {
+      // Left Y (肥料 stack): compute stacked totals per year
+      const stackTotals = props.fertStructure.map(d => d.n + d.p + d.k + d.compound)
+      const fMin = 0
+      const fMax = Math.max(...stackTotals) * 1.08
+      // Right Y (机械)
+      const mVals = machTrend.value
+      const mMin = mVals.length > 0 ? Math.min(...mVals) * 0.95 : 0
+      const mMax = mVals.length > 0 ? Math.max(...mVals) * 1.05 : 120000
+      return [
+        {
+          type: 'value',
+          name: '万吨 (肥料)',
+          min: fMin,
+          max: fMax,
+          nameTextStyle: { color: '#4A3528', fontSize: 10 },
+          axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace' },
+          splitLine: { lineStyle: { color: 'rgba(30,201,107,0.08)' } },
+        },
+        {
+          type: 'value',
+          name: '万千瓦 (机械)',
+          min: mMin,
+          max: mMax,
+          nameTextStyle: { color: '#2B9EED', fontSize: 10 },
+          axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace', formatter: (v: number) => (v / 10000).toFixed(1) + '亿' },
+          splitLine: { show: false },
+        }
+      ]
+    })(),
     series: [
       // Stacked area: fertilizer structure (left Y-axis)
       { name: '氮肥N', type: 'line', stack: 'fert', smooth: true, areaStyle: { opacity: 0.7 }, yAxisIndex: 0, data: props.fertStructure.map(d => d.n), itemStyle: { color: '#F0473C' }, lineStyle: { color: '#F0473C', width: 1 }, symbol: 'none', emphasis: { focus: 'series' } },

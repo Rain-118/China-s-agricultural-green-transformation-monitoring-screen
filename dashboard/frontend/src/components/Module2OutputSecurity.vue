@@ -51,24 +51,32 @@ function buildDualAxisOption() {
     grid: { top: 40, right: 60, bottom: 35, left: 55 },
     xAxis: {
       type: 'category', data: props.nationalFert.map(d => d.year + ''),
-      axisLabel: { color: '#4A3528', fontSize: 10 },
+      axisLabel: { color: '#4A3528', fontSize: 10, interval: 0, rotate: 0 },
       axisLine: { lineStyle: { color: '#1EC96B' } },
       axisTick: { show: false },
     },
-    yAxis: [
-      {
-        type: 'value', name: '化肥 (万吨)', min: 4800, max: 5350,
-        nameTextStyle: { color: '#F0473C', fontSize: 10 },
-        axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace' },
-        splitLine: { lineStyle: { color: 'rgba(30,201,107,0.08)' } },
-      },
-      {
-        type: 'value', name: '粮食 (万吨)', min: 67000, max: 72000,
-        nameTextStyle: { color: '#1EC96B', fontSize: 10 },
-        axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace', formatter: (v: number) => (v / 10000).toFixed(2) + '亿' },
-        splitLine: { show: false },
-      }
-    ],
+    yAxis: (() => {
+      const fertVals = props.nationalFert.map(d => d.value)
+      const grainVals = props.nationalGrain.map(d => d.value)
+      const fMin = Math.min(...fertVals), fMax = Math.max(...fertVals)
+      const gMin = Math.min(...grainVals), gMax = Math.max(...grainVals)
+      const fPad = (fMax - fMin) * 0.08 || 50
+      const gPad = (gMax - gMin) * 0.08 || 200
+      return [
+        {
+          type: 'value', name: '化肥 (万吨)', min: fMin - fPad, max: fMax + fPad,
+          nameTextStyle: { color: '#F0473C', fontSize: 10 },
+          axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace' },
+          splitLine: { lineStyle: { color: 'rgba(30,201,107,0.08)' } },
+        },
+        {
+          type: 'value', name: '粮食 (万吨)', min: gMin - gPad, max: gMax + gPad,
+          nameTextStyle: { color: '#1EC96B', fontSize: 10 },
+          axisLabel: { color: '#4A3528', fontSize: 10, fontFamily: 'DIN Pro, Consolas, monospace', formatter: (v: number) => (v / 10000).toFixed(2) + '亿' },
+          splitLine: { show: false },
+        }
+      ]
+    })(),
     series: [
       {
         name: '化肥总量(万吨)', type: 'line', data: props.nationalFert.map(d => d.value), yAxisIndex: 0, smooth: true,
