@@ -4,7 +4,7 @@ import pool from '../db.js';
 const router = Router();
 
 // Helper: query indicator data
-async function queryIndicator(category, indicator, years = [2021, 2022, 2023, 2024]) {
+async function queryIndicator(category, indicator, years) {
   const [rows] = await pool.query(
     `SELECT province, year, value FROM indicator_data
      WHERE category = ? AND indicator = ? AND year IN (?) ORDER BY province, year`,
@@ -37,7 +37,7 @@ async function getYearMap(category, indicator, year) {
 // ==================== MAIN DASHBOARD ENDPOINT ====================
 router.get('/dashboard', async (req, res) => {
   try {
-    const years = [2021, 2022, 2023, 2024];
+    const years = [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024];
     const PROVINCES = ['北京','天津','河北','山西','内蒙古','辽宁','吉林','黑龙江','上海','江苏','浙江','安徽','福建','江西','山东','河南','湖北','湖南','广东','广西','海南','重庆','四川','贵州','云南','西藏','陕西','甘肃','青海','宁夏','新疆'];
 
     // Fetch all data in parallel
@@ -94,32 +94,32 @@ router.get('/dashboard', async (req, res) => {
       natGrainYield[y] = PROVINCES.reduce((s, p) => s + ((gYield[p] && gYield[p][y]) || 0), 0);
     }
 
-    // per-province computed indicators
+    // per-province computed indicators (2016 baseline)
     const provincesData = PROVINCES.map(prov => {
-      const f21 = (fTotal[prov] && fTotal[prov][2021]) || null;
+      const f16 = (fTotal[prov] && fTotal[prov][2016]) || null;
       const f24 = (fTotal[prov] && fTotal[prov][2024]) || null;
-      const g21 = (gYield[prov] && gYield[prov][2021]) || null;
+      const g16 = (gYield[prov] && gYield[prov][2016]) || null;
       const g24 = (gYield[prov] && gYield[prov][2024]) || null;
-      const m21 = (mach[prov] && mach[prov][2021]) || null;
+      const m16 = (mach[prov] && mach[prov][2016]) || null;
       const m24 = (mach[prov] && mach[prov][2024]) || null;
-      const ag21 = (agri[prov] && agri[prov][2021]) || null;
+      const ag16 = (agri[prov] && agri[prov][2016]) || null;
       const ag24 = (agri[prov] && agri[prov][2024]) || null;
-      const inc21 = (inc[prov] && inc[prov][2021]) || null;
+      const inc16 = (inc[prov] && inc[prov][2016]) || null;
       const inc24 = (inc[prov] && inc[prov][2024]) || null;
 
-      const fertReductionRate = f21 && f24 ? ((f21 - f24) / f21) : null;
-      const grainIncreaseRate = g21 && g24 ? ((g24 - g21) / g21) : null;
-      const machIncreaseRate = m21 && m24 ? ((m24 - m21) / m21) : null;
-      const agriOutputChangeRate = ag21 && ag24 ? ((ag24 - ag21) / ag21) : null;
-      const incomeIncreaseRate = inc21 && inc24 ? ((inc24 - inc21) / inc21) : null;
+      const fertReductionRate = f16 && f24 ? ((f16 - f24) / f16) : (f24 ? 0 : null);
+      const grainIncreaseRate = g16 && g24 ? ((g24 - g16) / g16) : null;
+      const machIncreaseRate = m16 && m24 ? ((m24 - m16) / m16) : null;
+      const agriOutputChangeRate = ag16 && ag24 ? ((ag24 - ag16) / ag16) : null;
+      const incomeIncreaseRate = inc16 && inc24 ? ((inc24 - inc16) / inc16) : null;
 
       // 效率: 粮食产量 / 化肥施用量
-      const eff21 = f21 && g21 ? (g21 * 10000 / f21) : null;
+      const eff16 = f16 && g16 ? (g16 * 10000 / f16) : null;
       const eff24 = f24 && g24 ? (g24 * 10000 / f24) : null;
-      const efficiencyChangeRate = eff21 && eff24 ? ((eff24 - eff21) / eff21) : null;
+      const efficiencyChangeRate = eff16 && eff24 ? ((eff24 - eff16) / eff16) : null;
 
-      // 综合响应度 (综合减量率归一化)
-      const natFertReduction = natFertTotal[2021] && natFertTotal[2024] ? ((natFertTotal[2021] - natFertTotal[2024]) / natFertTotal[2021]) : 0;
+      // 综合响应度 (以2016为基准)
+      const natFertReduction = natFertTotal[2016] && natFertTotal[2024] ? ((natFertTotal[2016] - natFertTotal[2024]) / natFertTotal[2016]) : 0;
       const responseDegree = fertReductionRate !== null && natFertReduction ? (fertReductionRate / natFertReduction) : null;
 
       return {
@@ -167,9 +167,9 @@ router.get('/dashboard', async (req, res) => {
       return { year: y, n: Math.round(n * 100) / 100, p: Math.round(p * 100) / 100, k: Math.round(k * 100) / 100, compound: Math.round(comp * 100) / 100 };
     });
 
-    // national rates
-    const natFertReductionRate = natFertTotal[2021] && natFertTotal[2024] ? Math.round(((natFertTotal[2021] - natFertTotal[2024]) / natFertTotal[2021]) * 10000) / 100 : null;
-    const natGrainIncreaseRate = natGrainYield[2021] && natGrainYield[2024] ? Math.round(((natGrainYield[2024] - natGrainYield[2021]) / natGrainYield[2021]) * 10000) / 100 : null;
+    // national rates (2016 baseline)
+    const natFertReductionRate = natFertTotal[2016] && natFertTotal[2024] ? Math.round(((natFertTotal[2016] - natFertTotal[2024]) / natFertTotal[2016]) * 10000) / 100 : null;
+    const natGrainIncreaseRate = natGrainYield[2016] && natGrainYield[2024] ? Math.round(((natGrainYield[2024] - natGrainYield[2016]) / natGrainYield[2016]) * 10000) / 100 : null;
 
     // quadrant data for module 2
     const quadrantData = provincesData

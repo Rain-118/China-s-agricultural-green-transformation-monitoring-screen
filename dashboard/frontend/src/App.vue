@@ -18,7 +18,7 @@
       </header>
 
       <!-- Policy Timeline -->
-      <PolicyTimeline />
+      <PolicyTimeline @update:year="onYearChange" />
 
       <!-- Dashboard Grid -->
     <div class="grid-container" v-if="data">
@@ -35,7 +35,11 @@
 
       <!-- Center Column: 模块1 地图 + 模块6 建议 -->
       <div class="card module-1 map-card">
-        <Module1InputReduction :provinces="data.provinces" :levelCounts="data.levelCounts" />
+        <Module1InputReduction
+          :provinces="data.provinces"
+          :levelCounts="data.levelCounts"
+          :selectedYear="selectedYear"
+        />
       </div>
       <div class="card module-6 module-6-compact">
         <Module6Recommendation
@@ -69,7 +73,7 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <span>数据来源：国家统计局分省年度数据（2021-2024）</span>
+        <span>数据来源：国家统计局分省年度数据（2016-2024）</span>
         <span>|</span>
         <span>政策依据：2024年中央一号文件"推进化肥农药减量增效"</span>
         <span>|</span>
@@ -90,6 +94,11 @@ import Module5Efficiency from './components/Module5Efficiency.vue'
 import Module6Recommendation from './components/Module6Recommendation.vue'
 
 const data = ref<DashboardData | null>(null)
+const selectedYear = ref(2024)
+
+function onYearChange(year: number) {
+  selectedYear.value = year
+}
 
 onMounted(async () => {
   data.value = await fetchDashboard()
