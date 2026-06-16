@@ -81,10 +81,6 @@ function buildDualAxisOption() {
       {
         name: '化肥总量(万吨)', type: 'line', data: props.nationalFert.map(d => d.value), yAxisIndex: 0, smooth: true,
         lineStyle: { color: '#F0473C', width: 2.5 }, itemStyle: { color: '#F0473C' }, symbol: 'circle', symbolSize: 8,
-        markLine: {
-          silent: true, symbol: 'none', lineStyle: { color: '#F0473C', type: 'dashed', width: 1.5 },
-          label: { color: '#F0473C', fontSize: 10, formatter: '↓ 减量' }, data: [{ type: 'max' }, { type: 'min' }]
-        },
         markPoint: {
           symbol: 'pin', symbolSize: 36,
           data: [
@@ -96,10 +92,6 @@ function buildDualAxisOption() {
       {
         name: '粮食产量(万吨)', type: 'line', data: props.nationalGrain.map(d => d.value), yAxisIndex: 1, smooth: true,
         lineStyle: { color: '#1EC96B', width: 2.5 }, itemStyle: { color: '#1EC96B' }, symbol: 'diamond', symbolSize: 8,
-        markLine: {
-          silent: true, symbol: 'none', lineStyle: { color: '#1EC96B', type: 'dashed', width: 1.5 },
-          label: { color: '#1EC96B', fontSize: 10, formatter: '↑ 增产' }, data: [{ type: 'min' }, { type: 'max' }]
-        },
         markPoint: {
           symbol: 'pin', symbolSize: 36,
           data: [
