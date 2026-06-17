@@ -11,13 +11,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
 import type { ProvinceData } from '../api'
 
 const props = defineProps<{
   fertStructure: { year: number; n: number; p: number; k: number; compound: number }[]
   provinces: ProvinceData[]
+  selectedYear: number
 }>()
 
 const chartRef = ref<HTMLDivElement>()
@@ -59,8 +60,36 @@ const machTrend = computed(() => {
   return Object.entries(map).sort((a, b) => Number(a[0]) - Number(b[0])).map(([_, val]) => Math.round(val))
 })
 
+const filteredFert = computed(() => props.fertStructure.filter(d => d.year <= props.selectedYear))
+const filteredMach = computed(() => machTrend.value.filter((_, i) => {
+  const years = Object.keys(
+    props.provinces.reduce((acc, p) => {
+      Object.keys(p.machinery).forEach(y => acc[y] = true)
+      return acc
+    }, {} as Record<string, boolean>)
+  ).map(Number).sort((a, b) => a - b)
+  return years[i] <= props.selectedYear
+}))
+
 function buildOption() {
-  const years = props.fertStructure.map(d => d.year + '年')
+  const fert = filteredFert.value
+
+  // Compute mach years matching fert data
+  const allMachYears = Object.keys(
+    props.provinces.reduce((acc, p) => {
+      Object.keys(p.machinery).forEach(y => acc[y] = true)
+      return acc
+    }, {} as Record<string, boolean>)
+  ).map(Number).sort((a, b) => a - b)
+
+  const machYears = allMachYears.filter(y => y <= props.selectedYear)
+  const machData = machYears.map(y => {
+    let total = 0
+    for (const p of props.provinces) {
+      total += p.machinery[y] || 0
+    }
+    return Math.round(total)
+  })
 
   return {
     backgroundColor: 'transparent',
@@ -78,20 +107,17 @@ function buildOption() {
     grid: { top: 28, right: 55, bottom: 28, left: 50 },
     xAxis: {
       type: 'category',
-      data: years,
+      data: fert.map(d => d.year + '年'),
       boundaryGap: false,
       axisLabel: { color: '#4A3528', fontSize: 12 },
       axisLine: { lineStyle: { color: '#1EC96B' } },
     },
     yAxis: (() => {
-      // Left Y (肥料 stack): compute stacked totals per year
-      const stackTotals = props.fertStructure.map(d => d.n + d.p + d.k + d.compound)
+      const stackTotals = fert.map(d => d.n + d.p + d.k + d.compound)
       const fMin = 0
       const fMax = Math.max(...stackTotals) * 1.08
-      // Right Y (机械)
-      const mVals = machTrend.value
-      const mMin = mVals.length > 0 ? Math.min(...mVals) * 0.95 : 0
-      const mMax = mVals.length > 0 ? Math.max(...mVals) * 1.05 : 120000
+      const mMin = machData.length > 0 ? Math.min(...machData) * 0.95 : 0
+      const mMax = machData.length > 0 ? Math.max(...machData) * 1.05 : 120000
       return [
         {
           type: 'value',
@@ -114,15 +140,13 @@ function buildOption() {
       ]
     })(),
     series: [
-      // Stacked area: fertilizer structure (left Y-axis)
-      { name: '氮肥N', type: 'line', stack: 'fert', smooth: true, areaStyle: { opacity: 0.7 }, yAxisIndex: 0, data: props.fertStructure.map(d => d.n), itemStyle: { color: '#F0473C' }, lineStyle: { color: '#F0473C', width: 1 }, symbol: 'none', emphasis: { focus: 'series' } },
-      { name: '磷肥P', type: 'line', stack: 'fert', smooth: true, areaStyle: { opacity: 0.7 }, yAxisIndex: 0, data: props.fertStructure.map(d => d.p), itemStyle: { color: '#F5B642' }, lineStyle: { color: '#F5B642', width: 1 }, symbol: 'none', emphasis: { focus: 'series' } },
-      { name: '钾肥K', type: 'line', stack: 'fert', smooth: true, areaStyle: { opacity: 0.7 }, yAxisIndex: 0, data: props.fertStructure.map(d => d.k), itemStyle: { color: '#2B9EED' }, lineStyle: { color: '#2B9EED', width: 1 }, symbol: 'none', emphasis: { focus: 'series' } },
-      { name: '复合肥', type: 'line', stack: 'fert', smooth: true, areaStyle: { opacity: 0.7 }, yAxisIndex: 0, data: props.fertStructure.map(d => d.compound), itemStyle: { color: '#1EC96B' }, lineStyle: { color: '#1EC96B', width: 1 }, symbol: 'none', emphasis: { focus: 'series' } },
-      // Line: machinery (right Y-axis, above the area)
+      { name: '氮肥N', type: 'line', stack: 'fert', smooth: true, areaStyle: { opacity: 0.7 }, yAxisIndex: 0, data: fert.map(d => d.n), itemStyle: { color: '#F0473C' }, lineStyle: { color: '#F0473C', width: 1 }, symbol: 'none', emphasis: { focus: 'series' } },
+      { name: '磷肥P', type: 'line', stack: 'fert', smooth: true, areaStyle: { opacity: 0.7 }, yAxisIndex: 0, data: fert.map(d => d.p), itemStyle: { color: '#F5B642' }, lineStyle: { color: '#F5B642', width: 1 }, symbol: 'none', emphasis: { focus: 'series' } },
+      { name: '钾肥K', type: 'line', stack: 'fert', smooth: true, areaStyle: { opacity: 0.7 }, yAxisIndex: 0, data: fert.map(d => d.k), itemStyle: { color: '#2B9EED' }, lineStyle: { color: '#2B9EED', width: 1 }, symbol: 'none', emphasis: { focus: 'series' } },
+      { name: '复合肥', type: 'line', stack: 'fert', smooth: true, areaStyle: { opacity: 0.7 }, yAxisIndex: 0, data: fert.map(d => d.compound), itemStyle: { color: '#1EC96B' }, lineStyle: { color: '#1EC96B', width: 1 }, symbol: 'none', emphasis: { focus: 'series' } },
       {
         name: '机械总动力', type: 'line', yAxisIndex: 1, smooth: true,
-        data: machTrend.value,
+        data: machData,
         lineStyle: { color: '#2B9EED', width: 3 },
         itemStyle: { color: '#2B9EED' },
         symbol: 'diamond', symbolSize: 10,
@@ -132,6 +156,10 @@ function buildOption() {
     ]
   }
 }
+
+watch(() => props.selectedYear, () => {
+  if (chart) chart.setOption(buildOption())
+})
 
 onMounted(() => {
   if (chartRef.value) {

@@ -82,13 +82,14 @@
         <Module5Efficiency
           :provinces="data.provinces"
           :efficiencyRanking="data.efficiencyRanking"
+          :selectedYear="selectedYear"
         />
       </div>
       <div class="card module-4">
         <div class="card-grip" @click="focusedModule = 'module4'" title="点击放大">
           <span class="grip-icon">⛶</span>
         </div>
-        <Module4Economy />
+        <Module4Economy :selectedYear="selectedYear" />
       </div>
 
       <!-- Right Column: 模块2、模块3 -->
@@ -100,6 +101,7 @@
           :nationalFert="data.nationalFertilizerTrend"
           :nationalGrain="data.nationalGrainTrend"
           :provinces="data.provinces"
+          :selectedYear="selectedYear"
         />
       </div>
       <div class="card module-3">
@@ -109,6 +111,7 @@
         <Module3Substitution
           :fertStructure="data.fertStructure"
           :provinces="data.provinces"
+          :selectedYear="selectedYear"
         />
       </div>
     </div>
@@ -145,17 +148,20 @@
               :nationalFert="data.nationalFertilizerTrend"
               :nationalGrain="data.nationalGrainTrend"
               :provinces="data.provinces"
+              :selectedYear="selectedYear"
             />
             <Module3Substitution
               v-if="focusedModule === 'module3'"
               :fertStructure="data.fertStructure"
               :provinces="data.provinces"
+              :selectedYear="selectedYear"
             />
-            <Module4Economy v-if="focusedModule === 'module4'" />
+            <Module4Economy v-if="focusedModule === 'module4'" :selectedYear="selectedYear" />
             <Module5Efficiency
               v-if="focusedModule === 'module5'"
               :provinces="data.provinces"
               :efficiencyRanking="data.efficiencyRanking"
+              :selectedYear="selectedYear"
             />
             <Module6Recommendation
               v-if="focusedModule === 'module6'"

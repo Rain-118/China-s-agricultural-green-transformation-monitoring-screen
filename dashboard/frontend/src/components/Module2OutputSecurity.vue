@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
 import type { ProvinceData } from '../api'
 
@@ -19,6 +19,7 @@ const props = defineProps<{
   nationalFert: { year: number; value: number }[]
   nationalGrain: { year: number; value: number }[]
   provinces: ProvinceData[]
+  selectedYear: number
 }>()
 
 const dualAxisChart = ref<HTMLDivElement>()
@@ -44,21 +45,26 @@ const insightText = computed(() => {
   return `减量不减产目标基本实现，${31 - responding}省需关注。`
 })
 
+const filteredFert = computed(() => props.nationalFert.filter(d => d.year >= 2016 && d.year <= props.selectedYear))
+const filteredGrain = computed(() => props.nationalGrain.filter(d => d.year >= 2016 && d.year <= props.selectedYear))
+
 function buildDualAxisOption() {
+  const fertData = filteredFert.value
+  const grainData = filteredGrain.value
   return {
     backgroundColor: 'transparent',
     tooltip: { trigger: 'axis', backgroundColor: 'rgba(255,255,255,0.92)', borderColor: 'rgba(30,201,107,0.3)', textStyle: { color: '#555555', fontSize: 12 } },
     legend: { data: ['化肥总量(万吨)', '粮食产量(万吨)'], top: 6, textStyle: { color: '#4A3528', fontSize: 13 } },
     grid: { top: 40, right: 60, bottom: 35, left: 55 },
     xAxis: {
-      type: 'category', data: props.nationalFert.map(d => d.year + ''),
+      type: 'category', data: fertData.map(d => d.year + ''),
       axisLabel: { color: '#4A3528', fontSize: 12, interval: 0, rotate: 0 },
       axisLine: { lineStyle: { color: '#1EC96B' } },
       axisTick: { show: false },
     },
     yAxis: (() => {
-      const fertVals = props.nationalFert.map(d => d.value)
-      const grainVals = props.nationalGrain.map(d => d.value)
+      const fertVals = fertData.map(d => d.value)
+      const grainVals = grainData.map(d => d.value)
       const fMin = Math.min(...fertVals), fMax = Math.max(...fertVals)
       const gMin = Math.min(...grainVals), gMax = Math.max(...grainVals)
       const fPad = (fMax - fMin) * 0.08 || 50
@@ -82,7 +88,7 @@ function buildDualAxisOption() {
     })(),
     series: [
       {
-        name: '化肥总量(万吨)', type: 'line', data: props.nationalFert.map(d => d.value), yAxisIndex: 0, smooth: true,
+        name: '化肥总量(万吨)', type: 'line', data: fertData.map(d => d.value), yAxisIndex: 0, smooth: true,
         lineStyle: { color: '#F0473C', width: 2.5 }, itemStyle: { color: '#F0473C' }, symbol: 'circle', symbolSize: 8,
         markPoint: {
           symbol: 'pin', symbolSize: 36,
@@ -93,7 +99,7 @@ function buildDualAxisOption() {
         }
       },
       {
-        name: '粮食产量(万吨)', type: 'line', data: props.nationalGrain.map(d => d.value), yAxisIndex: 1, smooth: true,
+        name: '粮食产量(万吨)', type: 'line', data: grainData.map(d => d.value), yAxisIndex: 1, smooth: true,
         lineStyle: { color: '#1EC96B', width: 2.5 }, itemStyle: { color: '#1EC96B' }, symbol: 'diamond', symbolSize: 8,
         markPoint: {
           symbol: 'pin', symbolSize: 36,
@@ -106,6 +112,10 @@ function buildDualAxisOption() {
     ]
   }
 }
+
+watch(() => props.selectedYear, () => {
+  if (dualChart) dualChart.setOption(buildDualAxisOption())
+})
 
 onMounted(() => {
   if (dualAxisChart.value) {

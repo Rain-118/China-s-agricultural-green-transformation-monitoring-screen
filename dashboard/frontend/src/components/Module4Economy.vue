@@ -2,7 +2,7 @@
   <div class="module">
     <h3 class="module-title">经济响应度</h3>
     <div class="chart-full" ref="chartRef"></div>
-    <div class="insight" v-if="chartData.length">
+    <div class="insight" v-if="filteredData.length">
       <span>亩均施肥量<span style="color:#2B9EED">↓{{ fertTrend }}</span></span>
       <span>亩均产值<span style="color:#1EC96B">↑{{ incomeTrend }}</span></span>
       <span class="insight-text">{{ insightText }}</span>
@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
 import { fetchNationalEconomy } from '../api'
 
@@ -19,24 +19,29 @@ const chartRef = ref<HTMLDivElement>()
 let chart: echarts.ECharts | null = null
 let resizeObserver: ResizeObserver | null = null
 
+const props = defineProps<{ selectedYear: number }>()
+
 const chartData = ref<{ year: number; fertPerMu: number | null; incomePerMu: number | null }[]>([])
+const allData = ref<{ year: number; fertPerMu: number | null; incomePerMu: number | null }[]>([])
+
+const filteredData = computed(() => allData.value.filter(d => d.year <= props.selectedYear))
 
 const fertTrend = computed(() => {
-  const d = chartData.value; if (d.length < 2) return ''
+  const d = filteredData.value; if (d.length < 2) return ''
   const a = d[0].fertPerMu, b = d[d.length - 1].fertPerMu
   if (!a || !b) return ''
   return ((a - b) / a * 100).toFixed(1) + '%'
 })
 
 const incomeTrend = computed(() => {
-  const d = chartData.value; if (d.length < 2) return ''
+  const d = filteredData.value; if (d.length < 2) return ''
   const a = d[0].incomePerMu, b = d[d.length - 1].incomePerMu
   if (!a || !b) return ''
   return ((b - a) / a * 100).toFixed(1) + '%'
 })
 
 const insightText = computed(() => {
-  const d = chartData.value; if (d.length < 2) return ''
+  const d = filteredData.value; if (d.length < 2) return ''
   const first = d[0], last = d[d.length - 1]
   if (!first.fertPerMu || !last.fertPerMu || !first.incomePerMu || !last.incomePerMu) return ''
   const fertDrop = first.fertPerMu - last.fertPerMu
@@ -45,9 +50,10 @@ const insightText = computed(() => {
 })
 
 function buildOption() {
-  const years = chartData.value.map(d => d.year + '年')
-  const fertData = chartData.value.map(d => d.fertPerMu)
-  const incomeData = chartData.value.map(d => d.incomePerMu)
+  const filtered = allData.value.filter(d => d.year <= props.selectedYear)
+  const years = filtered.map(d => d.year + '年')
+  const fertData = filtered.map(d => d.fertPerMu)
+  const incomeData = filtered.map(d => d.incomePerMu)
 
   return {
     backgroundColor: 'transparent',
@@ -77,7 +83,7 @@ function buildOption() {
 
 onMounted(async () => {
   const rows = await fetchNationalEconomy()
-  chartData.value = rows.filter(r => r.fertPerMu !== null && r.incomePerMu !== null)
+  allData.value = rows.filter(r => r.fertPerMu !== null && r.incomePerMu !== null)
   if (chartRef.value) {
     chart = echarts.init(chartRef.value)
     chart.setOption(buildOption())
@@ -87,6 +93,11 @@ onMounted(async () => {
   })
   if (chartRef.value) resizeObserver.observe(chartRef.value)
 })
+
+watch(() => props.selectedYear, () => {
+  if (chart) chart.setOption(buildOption())
+})
+
 onUnmounted(() => { resizeObserver?.disconnect(); chart?.dispose() })
 </script>
 

@@ -23,13 +23,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
 import type { ProvinceData } from '../api'
 
 const props = defineProps<{
   provinces: ProvinceData[]
   efficiencyRanking: { rank: number; name: string; efficiency: number; efficiencyChangeRate: number | null; direction: string | null }[]
+  selectedYear: number
 }>()
 
 const radarContainer = ref<HTMLDivElement>()
@@ -85,38 +86,39 @@ function calcProvinceScores(prov: ProvinceData): number[] {
   const gYield = prov.grain
   const irrig = prov.irrigation
 
-  const f16 = fTotal[2016] || 0, f24 = fTotal[2024] || 0
-  const n16 = fN[2016] || 0, n24 = fN[2024] || 0
-  const comp16 = fCompound[2016] || 0, comp24 = fCompound[2024] || 0
-  const g16 = gYield[2016] || 0, g24 = gYield[2024] || 0
-  const ir16 = irrig[2016] || 0, ir24 = irrig[2024] || 0
+  const yr = props.selectedYear
+  const f16 = fTotal[2016] || 0, fYr = fTotal[yr] || fTotal[2024] || 0
+  const n16 = fN[2016] || 0, nYr = fN[yr] || fN[2024] || 0
+  const comp16 = fCompound[2016] || 0, compYr = fCompound[yr] || fCompound[2024] || 0
+  const g16 = gYield[2016] || 0, gYr = gYield[yr] || gYield[2024] || 0
+  const ir16 = irrig[2016] || 0, irYr = irrig[yr] || irrig[2024] || 0
 
   // 1. 肥料利用率 — 吨粮/吨肥，0-3000 → 0-100
   const eff = prov.efficiency || 0
   const s1 = Math.min(100, Math.max(0, (eff / 3000) * 100))
 
   // 2. 养分留存率 — 当前复合肥占比
-  const ratio24 = f24 > 0 ? comp24 / f24 : 0
-  const s2 = Math.min(100, Math.max(0, ratio24 * 200))
+  const ratioYr = fYr > 0 ? compYr / fYr : 0
+  const s2 = Math.min(100, Math.max(0, ratioYr * 200))
 
-  // 3. 节水效率 — 灌溉效率提升率 (2016→2024)
+  // 3. 节水效率 — 灌溉效率提升率 (2016→选中年)
   const irEff16 = ir16 > 0 && g16 > 0 ? g16 / ir16 : 0
-  const irEff24 = ir24 > 0 && g24 > 0 ? g24 / ir24 : 0
-  const irChange = irEff16 > 0 ? (irEff24 - irEff16) / irEff16 : 0
+  const irEffYr = irYr > 0 && gYr > 0 ? gYr / irYr : 0
+  const irChange = irEff16 > 0 ? (irEffYr - irEff16) / irEff16 : 0
   const s3 = Math.min(100, Math.max(0, (irChange + 0.15) * 250))
 
-  // 4. 面源污染降幅 — 化肥总减量率 (2016→2024)
-  const fertRed = f16 > 0 ? (f16 - f24) / f16 : 0
+  // 4. 面源污染降幅 — 化肥总减量率 (2016→选中年)
+  const fertRed = f16 > 0 ? (f16 - fYr) / f16 : 0
   const s4 = Math.min(100, Math.max(0, fertRed * 200))
 
-  // 5. 土壤酸化改善 — 氮肥减量率 (2016→2024)
-  const nRed = n16 > 0 ? (n16 - n24) / n16 : 0
+  // 5. 土壤酸化改善 — 氮肥减量率 (2016→选中年)
+  const nRed = n16 > 0 ? (n16 - nYr) / n16 : 0
   const s5 = Math.min(100, Math.max(0, nRed * 200))
 
-  // 6. 板结修复 — 复合肥占比提升 (2016→2024)
+  // 6. 板结修复 — 复合肥占比提升 (2016→选中年)
   const r16 = f16 > 0 ? comp16 / f16 : 0
-  const r24 = f24 > 0 ? comp24 / f24 : 0
-  const compUp = r24 - r16
+  const rYr = fYr > 0 ? compYr / fYr : 0
+  const compUp = rYr - r16
   const s6 = Math.min(100, Math.max(0, (compUp + 0.05) * 400))
 
   return [s1, s2, s3, s4, s5, s6]
@@ -226,6 +228,10 @@ onMounted(() => {
     chart?.resize()
   })
   resizeObserver.observe(radarContainer.value)
+})
+
+watch(() => props.selectedYear, () => {
+  if (chart) chart.setOption(buildRadarOption())
 })
 
 onUnmounted(() => { resizeObserver?.disconnect(); chart?.dispose() })
